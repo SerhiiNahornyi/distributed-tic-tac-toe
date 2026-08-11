@@ -1,0 +1,21 @@
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+
+# Frontend
+node/
+node_modules/
+dist/
+npm-debug.log*
+
+# OS
+.DS_Store
