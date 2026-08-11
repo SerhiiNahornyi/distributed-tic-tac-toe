@@ -1,0 +1,82 @@
+server:
+  port: ${SERVER_PORT:8082}
+
+spring:
+  application:
+    name: game-session-service
+
+  mvc:
+    problemdetails:
+      enabled: true
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+        # send() blocks until the producer has topic metadata. Unbounded, an unreachable broker
+        # would hold a REST thread for 60 seconds and turn a Kafka outage into a session-service
+        # outage. Event publishing here is best-effort by design, so fail fast and log.
+        max.block.ms: 2000
+    admin:
+      fail-fast: false
+      # Observed sends resolve the cluster id through an admin call; bound it so an unreachable
+      # broker costs seconds on the publisher thread rather than tens of seconds.
+      operation-timeout: 3s
+      close-timeout: 3s
+      properties:
+        request.timeout.ms: 3000
+        default.api.timeout.ms: 5000
+    template:
+      observation-enabled: true
+
+tictactoe:
+  session:
+    engine-base-url: ${GAME_ENGINE_URL:http://localhost:8081}
+    connect-timeout: 2s
+    read-timeout: 5s
+    # Pacing for the viewer, not a concurrency control. Set to 0 for instant simulations in tests.
+    move-delay: ${MOVE_DELAY:600ms}
+    default-strategy: ${MOVE_STRATEGY:random}
+    max-attempts: 20
+
+resilience4j:
+  retry:
+    instances:
+      gameEngine:
+        max-attempts: 3
+        wait-duration: 200ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        # Only transport failures and 5xx are repeated. A rejected move is a rule violation:
+        # replaying it produces the same answer and hides the bug that generated it.
+        retry-exceptions:
+          - dev.nahornyi.tictactoe.session.client.EngineUnavailableException
+        ignore-exceptions:
+          - dev.nahornyi.tictactoe.session.client.EngineRejectedRequestException
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name},%X{traceId:-},%X{spanId:-}] [%X{sessionId:-}]"
+  level:
+    dev.nahornyi.tictactoe: INFO
