@@ -1,0 +1,348 @@
+:root {
+  --bg: #0f1117;
+  --panel: #171a23;
+  --panel-border: #262b38;
+  --text: #e6e8ee;
+  --muted: #8b93a7;
+  --x: #5eb1ff;
+  --o: #ff8f6b;
+  --win: #4ade80;
+  --error: #f87171;
+  --accent: #6366f1;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 2rem 1rem 3rem;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+}
+
+.app {
+  max-width: 62rem;
+  margin: 0 auto;
+}
+
+.header__title {
+  margin: 0 0 0.25rem;
+  font-size: 1.75rem;
+  letter-spacing: -0.02em;
+}
+
+.header__subtitle {
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  max-width: 46rem;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 16rem;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 48rem) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+}
+
+.panel__title {
+  margin: 0 0 0.75rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+/* Status banner ------------------------------------------------------------ */
+
+.banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--panel-border);
+  margin-bottom: 1.25rem;
+  font-weight: 600;
+}
+
+.banner--win {
+  border-color: rgba(74, 222, 128, 0.4);
+  background: rgba(74, 222, 128, 0.08);
+  color: var(--win);
+}
+
+.banner--draw {
+  border-color: rgba(139, 147, 167, 0.4);
+  color: var(--muted);
+}
+
+.banner--error {
+  border-color: rgba(248, 113, 113, 0.4);
+  background: rgba(248, 113, 113, 0.08);
+  color: var(--error);
+}
+
+.connection {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.connection__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.connection--live {
+  color: var(--win);
+}
+
+.connection--reconnecting {
+  color: var(--error);
+}
+
+.connection--live .connection__dot {
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* Board -------------------------------------------------------------------- */
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  max-width: 22rem;
+  margin: 0 auto;
+}
+
+.cell {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  font-size: 2.75rem;
+  font-weight: 700;
+  border-radius: 0.5rem;
+  background: #10131b;
+  border: 1px solid var(--panel-border);
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.cell--x {
+  color: var(--x);
+}
+
+.cell--o {
+  color: var(--o);
+}
+
+.cell--latest {
+  border-color: var(--accent);
+  animation: drop 220ms ease-out;
+}
+
+.cell--winning {
+  border-color: var(--win);
+  background: rgba(74, 222, 128, 0.1);
+}
+
+@keyframes drop {
+  from {
+    transform: scale(0.85);
+    opacity: 0.4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cell,
+  .cell--latest,
+  .connection--live .connection__dot {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* Controls ----------------------------------------------------------------- */
+
+.controls {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.controls__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1 1 14rem;
+}
+
+.controls__label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.controls__select {
+  padding: 0.55rem 0.6rem;
+  border-radius: 0.5rem;
+  background: #10131b;
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  font: inherit;
+}
+
+.controls__start {
+  padding: 0.6rem 1.4rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 160ms ease;
+}
+
+.controls__start:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.controls__start:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.session-id {
+  margin: 1rem 0 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+  word-break: break-all;
+}
+
+/* Move log ----------------------------------------------------------------- */
+
+.log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.log__entry {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 0.4rem;
+  background: #10131b;
+  font-size: 0.85rem;
+}
+
+.log__symbol {
+  font-weight: 700;
+  width: 1.1rem;
+  text-align: center;
+}
+
+.log__symbol--x {
+  color: var(--x);
+}
+
+.log__symbol--o {
+  color: var(--o);
+}
+
+.log__cell {
+  flex: 1;
+  color: var(--text);
+}
+
+.log__index {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.log__empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* Errors ------------------------------------------------------------------- */
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.9rem;
+  margin-bottom: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  background: rgba(248, 113, 113, 0.08);
+  color: var(--error);
+}
+
+.error__icon {
+  display: grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background: var(--error);
+  color: #1a0d0d;
+  font-weight: 700;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.error__message {
+  flex: 1;
+  font-size: 0.9rem;
+}
+
+.error__dismiss {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0 0.25rem;
+}
