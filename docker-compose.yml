@@ -3,19 +3,23 @@ name: distributed-tic-tac-toe
 services:
 
   # Single-node Kafka in KRaft mode - broker and controller in one process, no ZooKeeper.
-  # Two listeners on purpose: INTERNAL for container-to-container traffic and PLAINTEXT advertised
-  # as localhost so tools on the host machine can also reach the broker.
+  #
+  # Two listeners: INTERNAL, advertised as `kafka`, for container-to-container traffic, and
+  # EXTERNAL, advertised as localhost, so a CLI on the host can also inspect the topic. Both
+  # advertised addresses must be routable from whoever uses them - advertising 0.0.0.0 is rejected
+  # by the broker at startup, which is why the bind address and the advertised address differ.
   kafka:
     image: apache/kafka:3.9.0
     container_name: tictactoe-kafka
     ports:
       - "9092:9092"
     environment:
+      CLUSTER_ID: tic-tac-toe-cluster-01
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,INTERNAL://0.0.0.0:29092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,INTERNAL://kafka:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: INTERNAL://:29092,EXTERNAL://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL

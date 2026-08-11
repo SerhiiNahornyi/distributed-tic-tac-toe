@@ -6,7 +6,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.kafka.KafkaContainer;
+import org.testcontainers.kafka.ConfluentKafkaContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import java.io.BufferedReader;
@@ -46,7 +46,7 @@ class FullGameFlowIT {
     private static final int SESSION_PORT = 18082;
     private static final int UI_PORT = 18080;
 
-    private static KafkaContainer kafka;
+    private static ConfluentKafkaContainer kafka;
     private static ServiceProcess engine;
     private static ServiceProcess session;
     private static ServiceProcess ui;
@@ -58,7 +58,10 @@ class FullGameFlowIT {
 
     @BeforeAll
     static void startTheStack() throws Exception {
-        kafka = new KafkaContainer(DockerImageName.parse("apache/kafka:3.9.0"));
+        // Confluent's image rather than the apache/kafka one used in docker-compose: Testcontainers
+        // has to advertise a listener on a port it only learns after the container starts, and this
+        // image's handling of that is the better-trodden path. The broker is the broker either way.
+        kafka = new ConfluentKafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.8.0"));
         kafka.start();
 
         String bootstrap = "--spring.kafka.bootstrap-servers=" + kafka.getBootstrapServers();
@@ -207,7 +210,7 @@ class FullGameFlowIT {
                 .isEqualTo(202);
     }
 
-    private JsonNode awaitTerminalSession(String sessionId) {
+    private JsonNode awaitTerminalSession(String sessionId) throws Exception {
         await().atMost(Duration.ofSeconds(60)).pollInterval(Duration.ofMillis(250)).until(() -> {
             String status = getJson(ui.baseUrl() + "/api/sessions/" + sessionId)
                     .get("sessionStatus").asText();
