@@ -1,0 +1,70 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: game-ui-service
+
+  mvc:
+    problemdetails:
+      enabled: true
+    # SSE streams must not be cut short by the servlet async timeout; the emitter owns the lifetime.
+    async:
+      request-timeout: -1
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: ${tictactoe.ui.consumer-group}
+      # A replica that has just started should show what happens next, not replay every game ever
+      # played. Offsets are meaningless here anyway - the group id is unique per instance.
+      auto-offset-reset: latest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      # Wrapping the JSON deserializer means one malformed message is logged and skipped instead of
+      # wedging the consumer in an infinite redelivery loop.
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+        spring.json.value.default.type: dev.nahornyi.tictactoe.contracts.event.GameEvent
+        spring.json.trusted.packages: dev.nahornyi.tictactoe.contracts.event
+        spring.json.use.type.headers: false
+    listener:
+      observation-enabled: true
+    admin:
+      fail-fast: false
+      operation-timeout: 3s
+      close-timeout: 3s
+      properties:
+        request.timeout.ms: 3000
+        default.api.timeout.ms: 5000
+
+tictactoe:
+  ui:
+    session-base-url: ${GAME_SESSION_URL:http://localhost:8082}
+    connect-timeout: 2s
+    read-timeout: 10s
+    stream-timeout: 30m
+    heartbeat-interval: 20s
+    # Unique per instance on purpose: every replica must receive every event so that a browser
+    # attached to any replica sees all moves. This is broadcast, not work sharing.
+    consumer-group: ui-service-${random.uuid}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name},%X{traceId:-},%X{spanId:-}]"
+  level:
+    dev.nahornyi.tictactoe: INFO
