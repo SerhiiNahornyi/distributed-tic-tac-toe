@@ -198,6 +198,19 @@ bidirectional channel for traffic that only flows one way.
 empty board and only catch up from the next move. The stream therefore opens with the current state,
 then streams changes.
 
+**No service registry, and that is the point.** Service discovery already happens: in Compose,
+`http://game-engine-service:8081` resolves through Docker's embedded DNS, and the identical URL
+resolves through a Service in Kubernetes. Eureka solves *client-side* discovery — many instances at
+unpredictable addresses, each client keeping a local registry to balance across them — which is a
+problem this system does not have, with three services at stable names injected as environment
+variables. Adding it would mean a fourth process to run, a registry that becomes a single point of
+failure, and registration lag on startup, in exchange for replacing DNS that already works. Worth
+noting too that Spring Cloud Netflix is largely retired: Ribbon, Hystrix and Zuul are gone and
+Eureka is the last piece standing, which is why resilience here uses Resilience4j, Hystrix's
+successor. The gateway half of the same idea *is* present — see the BFF below. If instance counts
+became dynamic, the answer would be the platform's own discovery or a service mesh, not a registry
+maintained in application code.
+
 **The UI service is a BFF.** The browser talks only to `:8080`, which proxies to the session
 service. Same-origin, so no CORS configuration to get wrong, and the internal services need not be
 reachable from outside the cluster. The proxy strips hop-by-hop headers and rewrites `Location` —
@@ -216,7 +229,9 @@ file-sized change, not a refactor.
 - **Idempotent consumers** keyed on game id and move number, since an outbox relay delivers at least
   once.
 - **Real persistence** — Postgres for games, Redis for sessions — plus schema migrations.
-- **Gateway and service discovery** rather than URLs pinned in configuration.
+- **A dedicated gateway** once there is more than one browser-facing concern — auth, rate limiting,
+  routing to several backends — rather than folding them into the BFF. Discovery would come from the
+  platform (Kubernetes Services, or a mesh), not a registry in application code.
 - **Authentication**: OAuth2 resource servers on the services, with the UI service performing the
   token exchange.
 - **A shared SSE fan-out** (or sticky routing) if the UI service ever needs to scale past what
